@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>KainoClicker</title>
+<style>
+  body {
+    margin: 0;
+    font-family: 'Orbitron', sans-serif;
+    background-color: #111;
+    color: #fff;
+    text-align: center;
+  }
+  #game-container {
+    padding: 20px;
+  }
+  #coinButton {
+    width: 200px;
+    height: 200px;
+    font-size: 24px;
+    border-radius: 50%;
+    border: 5px solid #fff;
+    cursor: pointer;
+    background-color: #222;
+    margin: 20px;
+    transition: 0.2s all;
+  }
+  #coinButton:hover {
+    transform: scale(1.1);
+    border-color: #ff00ff;
+  }
+  .themeButton {
+    margin: 5px;
+    padding: 10px 20px;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    transition: 0.2s all;
+  }
+  .themeButton:hover {
+    opacity: 0.7;
+  }
+  #shop {
+    margin-top: 20px;
+  }
+  .shop-item {
+    margin: 10px;
+    padding: 10px;
+    display: inline-block;
+    background: rgba(255,255,255,0.05);
+    border-radius: 10px;
+  }
+  .shop-item button {
+    margin-top: 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div id="game-container">
+  <h1>KainoClicker</h1>
+  <p id="prestigeDisplay">Prestige Points: 0</p>
+  <p>Coins: <span id="coinDisplay">0</span></p>
+  <p>Coins/sec: <span id="cpsDisplay">0</span></p>
+  
+  <button id="coinButton">Click me!</button>
+  
+  <div>
+    <button class="themeButton" onclick="setTheme('default')">Default</button>
+    <button class="themeButton" onclick="setTheme('flavorfoley')">FLAVOR FOLEY</button>
+    <button class="themeButton" onclick="setTheme('cookie')">Cookie</button>
+    <button class="themeButton" onclick="setTheme('uwu')">Uwu</button>
+  </div>
+  
+  <div id="shop"></div>
+  
+  <button id="rebirthBtn" disabled style="margin-top:20px;">Rebirth (Locked)</button>
+  
+  <p>Achievements:</p>
+  <ul id="achievements"></ul>
+</div>
+
+<script>
+let coins = 0;
+let clickPower = 1;
+let coinsPerSecond = 0;
+let prestigePoints = 0;
+let prestigeMultiplier = 1;
+const rebirthThreshold = 100000;
+
+// Shop items
+const items = {
+  cursor: { name: "Cursor", cps: 0.1, cost: 15, owned: 0 },
+  hand: { name: "Hand", cps: 1, cost: 100, owned: 0 },
+  factory: { name: "Factory", cps: 8, cost: 1200, owned: 0 },
+  automaton: { name: "Automaton", cps: 50, cost: 15000, owned: 0 }
+};
+
+// Achievements
+const achievements = [
+  { name: "First Click", condition: () => coins >= 1, unlocked: false },
+  { name: "Hundred Coins", condition: () => coins >= 100, unlocked: false },
+  { name: "Big Spender", condition: () => items.factory.owned >= 1, unlocked: false }
+];
+
+// Themes
+const themes = {
+  default: { bg: "#111", buttonBg: "#222", buttonBorder: "#fff", color: "#fff", font: "Orbitron, sans-serif" },
+  flavorfoley: { bg: "#1b001b", buttonBg: "#2a002a", buttonBorder: "#ff00ff", color: "#ff00ff", font: "'Orbitron', sans-serif" },
+  cookie: { bg: "#a0522d", buttonBg: "#d2691e", buttonBorder: "#fff", color: "#fff", font: "Arial, sans-serif" },
+  uwu: { bg: "#ffc0cb", buttonBg: "#ffb6c1", buttonBorder: "#fff", color: "#fff", font: "'Comic Sans MS', cursive, sans-serif" }
+};
+
+// Initialize shop
+function updateShop() {
+  const shopDiv = document.getElementById("shop");
+  shopDiv.innerHTML = "";
+  for (const key in items) {
+    const item = items[key];
+    const div = document.createElement("div");
+    div.className = "shop-item";
+    div.innerHTML = `<strong>${item.name}</strong><br>
+                     CPS: ${item.cps}<br>
+                     Owned: ${item.owned}<br>
+                     Cost: ${item.cost}<br>
+                     <button onclick="buyItem('${key}')">Buy</button>`;
+    shopDiv.appendChild(div);
+  }
+}
+
+// Buy item
+function buyItem(key) {
+  const item = items[key];
+  if (coins >= item.cost) {
+    coins -= item.cost;
+    item.owned++;
+    item.cost = Math.floor(item.cost * 1.15);
+    recalcCPS();
+    updateDisplay();
+    updateShop();
+  }
+}
+
+// Recalculate CPS
+function recalcCPS() {
+  coinsPerSecond = 0;
+  for (const key in items) {
+    coinsPerSecond += items[key].cps * items[key].owned;
+  }
+  coinsPerSecond *= prestigeMultiplier;
+}
+
+// Click
+document.getElementById("coinButton").addEventListener("click", () => {
+  coins += clickPower;
+  updateDisplay();
+});
+
+// Update display
+function updateDisplay() {
+  document.getElementById("coinDisplay").textContent = coins.toFixed(1);
+  document.getElementById("cpsDisplay").textContent = coinsPerSecond.toFixed(1);
+  document.getElementById("prestigeDisplay").textContent = `Prestige Points: ${prestigePoints}`;
+  checkAchievements();
+  checkRebirth();
+}
+
+// Achievements
+function checkAchievements() {
+  const ul = document.getElementById("achievements");
+  ul.innerHTML = "";
+  achievements.forEach(a => {
+    if (!a.unlocked && a.condition()) a.unlocked = true;
+    if (a.unlocked) {
+      const li = document.createElement("li");
+      li.textContent = a.name;
+      ul.appendChild(li);
+    }
+  });
+}
+
+// Themes
+function setTheme(name) {
+  const theme = themes[name];
+  document.body.style.background = theme.bg;
+  document.body.style.color = theme.color;
+  document.body.style.fontFamily = theme.font;
+  const btn = document.getElementById("coinButton");
+  btn.style.background = theme.buttonBg;
+  btn.style.borderColor = theme.buttonBorder;
+}
+
+// Passive income + check rebirth
+setInterval(() => {
+  coins += coinsPerSecond / 5; // 5 × 200ms = 1s
+  updateDisplay();
+}, 200);
+
+// Rebirth
+const rebirthBtn = document.getElementById("rebirthBtn");
+rebirthBtn.onclick = () => {
+  if (coins >= rebirthThreshold) {
+    prestigePoints++;
+    prestigeMultiplier = 1 + prestigePoints * 0.1; // 10% per prestige
+    coins = 0;
+    for (const key in items) items[key].owned = 0;
+    recalcCPS();
+    updateDisplay();
+    updateShop();
+    alert(`You rebirthed! Prestige Points: ${prestigePoints} (+${prestigePoints*10}% CPS)`);
+  }
+};
+
+function checkRebirth() {
+  if (coins >= rebirthThreshold) {
+    rebirthBtn.textContent = "Rebirth!";
+    rebirthBtn.disabled = false;
+  } else {
+    rebirthBtn.textContent = `Rebirth (Locked: ${rebirthThreshold - Math.floor(coins)} more coins)`;
+    rebirthBtn.disabled = true;
+  }
+}
+
+// Initialize
+updateShop();
+updateDisplay();
+setTheme('default');
+</script>
+</body>
+</html>
