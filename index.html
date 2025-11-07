@@ -41,6 +41,9 @@
       <input type="number" id="devMultiplier" value="1" min="1">
       <button onclick="setMultiplier()">Set</button>
     </div>
+    <div style="margin-top: 20px; border-top: 1px solid red; padding-top: 10px;">
+      <button onclick="resetGame()" style="background: #ff0000; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">TOTAL RESET</button>
+    </div>
   </div>
 </div>
 
@@ -50,7 +53,7 @@ let clickPower = 1;
 let coinsPerSecond = 0;
 let prestigePoints = 0;
 let prestigeMultiplier = 1;
-const rebirthThreshold = 5000;
+let rebirthCost = 1000; // Starting rebirth cost
 
 // Shop items
 const items = {
@@ -187,25 +190,40 @@ setInterval(() => {
 // Rebirth
 const rebirthBtn = document.getElementById("rebirthBtn");
 rebirthBtn.onclick = () => {
-  if (coins >= rebirthThreshold) {
+  if (coins >= rebirthCost) {
     prestigePoints++;
     prestigeMultiplier = prestigePoints + 1; // Linear increase: 1st=1x, 2nd=2x, 3rd=3x, etc.
     coins = 0;
-    for (const key in items) items[key].owned = 0;
+    // Reset all items to default values
+    for (const key in items) {
+      items[key].owned = 0;
+      // Reset costs to original values
+      items[key].cost = key === 'glove' ? 10 :
+                       key === 'cursor' ? 50 :
+                       key === 'hand' ? 500 :
+                       key === 'factory' ? 1000 :
+                       5000; // automaton
+    }
+    // Reset click power to 1 (base value)
+    clickPower = 1;
+    // Increase rebirth cost by 75%
+    rebirthCost = Math.floor(rebirthCost * 1.75);
+    // Recalculate everything
+    recalcClickPower();
     recalcCPS();
     updateDisplay();
     updateShop();
-    alert(`You rebirthed! Prestige Points: ${prestigePoints} (${prestigeMultiplier}x multiplier)`);
+    alert(`You rebirthed! Prestige Points: ${prestigePoints} (${prestigeMultiplier}x multiplier)\nNext rebirth will cost: ${rebirthCost.toLocaleString()} coins`);
     saveGame();
   }
 };
 
 function checkRebirth() {
-  if (coins >= rebirthThreshold) {
+  if (coins >= rebirthCost) {
     rebirthBtn.textContent = "Rebirth!";
     rebirthBtn.disabled = false;
   } else {
-    rebirthBtn.textContent = `Rebirth (Locked: ${rebirthThreshold - Math.floor(coins)} more coins)`;
+    rebirthBtn.textContent = `Rebirth (Locked: ${(rebirthCost - Math.floor(coins)).toLocaleString()} more coins)`;
     rebirthBtn.disabled = true;
   }
 }
@@ -218,6 +236,7 @@ function saveGame() {
     coinsPerSecond,
     prestigePoints,
     prestigeMultiplier,
+    rebirthCost,
     items,
     achievements
   };
@@ -234,6 +253,7 @@ function loadGame() {
     coinsPerSecond = gameData.coinsPerSecond;
     prestigePoints = gameData.prestigePoints;
     prestigeMultiplier = gameData.prestigeMultiplier;
+    rebirthCost = gameData.rebirthCost || 1000; // Default to 1000 if not saved
     
     // Restore items
     for (const key in gameData.items) {
@@ -259,7 +279,7 @@ setInterval(saveGame, 30000);
 let devMode = false;
 
 function toggleDevMode() {
-  if (!devMode && prompt("Enter dev mode password:") === "CEEZESS") {
+  if (!devMode && prompt("Enter dev mode password:") === "2582") {
     devMode = true;
     document.getElementById("devControls").style.display = "block";
   } else if (devMode) {
@@ -291,25 +311,65 @@ function setMultiplier() {
   saveGame();
 }
 
-// Dev mode activation with triple D press
-let dPressCount = 0;
-let lastDPressTime = 0;
-
-document.addEventListener('keydown', (e) => {
-  if (e.key.toLowerCase() === 'd') {
-    const currentTime = Date.now();
+// Total game reset function
+function resetGame() {
+  if (!devMode) return;
+  
+  if (confirm("Are you sure you want to COMPLETELY RESET the game? This cannot be undone!")) {
+    // Reset all game variables
+    coins = 0;
+    clickPower = 1;
+    coinsPerSecond = 0;
+    prestigePoints = 0;
+    prestigeMultiplier = 1;
+    rebirthCost = 5000; // Reset rebirth cost
     
-    // Reset count if it's been more than 1 second since last press
-    if (currentTime - lastDPressTime > 1000) {
-      dPressCount = 0;
+    // Reset all items
+    for (const key in items) {
+      items[key].owned = 0;
+      items[key].cost = items[key] === items.glove ? 10 :
+                       items[key] === items.cursor ? 50 :
+                       items[key] === items.hand ? 500 :
+                       items[key] === items.factory ? 1000 :
+                       5000; // automaton
     }
     
-    dPressCount++;
-    lastDPressTime = currentTime;
+    // Reset achievements
+    achievements.forEach(achievement => {
+      achievement.unlocked = false;
+    });
     
-    // Check if we've pressed D three times quickly
-    if (dPressCount === 3) {
-      dPressCount = 0;
+    // Clear local storage
+    localStorage.removeItem('kainoClickerSave');
+    
+    // Update everything
+    recalcCPS();
+    recalcClickPower();
+    updateDisplay();
+    updateShop();
+    
+    alert("Game has been completely reset!");
+  }
+}
+
+// Dev mode activation with secret code
+let secretCode = "";
+const targetCode = "ceezess";  // The secret code to match
+
+document.addEventListener('keydown', (e) => {
+  // Only track letter keys
+  if (e.key.length === 1 && e.key.match(/[a-z]/i)) {
+    // Add the key to our sequence
+    secretCode += e.key.toLowerCase();
+    
+    // If the code is longer than the target, remove the first character
+    if (secretCode.length > targetCode.length) {
+      secretCode = secretCode.slice(1);
+    }
+    
+    // Check if the code matches
+    if (secretCode === targetCode) {
+      secretCode = ""; // Reset the code
       toggleDevMode();
     }
   }
