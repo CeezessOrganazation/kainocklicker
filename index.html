@@ -3,59 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>KainoClicker</title>
-<style>
-  body {
-    margin: 0;
-    font-family: 'Orbitron', sans-serif;
-    background-color: #111;
-    color: #fff;
-    text-align: center;
-  }
-  #game-container {
-    padding: 20px;
-  }
-  #coinButton {
-    width: 200px;
-    height: 200px;
-    font-size: 24px;
-    border-radius: 50%;
-    border: 5px solid #fff;
-    cursor: pointer;
-    background-color: #222;
-    margin: 20px;
-    transition: 0.2s all;
-  }
-  #coinButton:hover {
-    transform: scale(1.1);
-    border-color: #ff00ff;
-  }
-  .themeButton {
-    margin: 5px;
-    padding: 10px 20px;
-    cursor: pointer;
-    border: none;
-    border-radius: 5px;
-    transition: 0.2s all;
-  }
-  .themeButton:hover {
-    opacity: 0.7;
-  }
-  #shop {
-    margin-top: 20px;
-  }
-  .shop-item {
-    margin: 10px;
-    padding: 10px;
-    display: inline-block;
-    background: rgba(255,255,255,0.05);
-    border-radius: 10px;
-  }
-  .shop-item button {
-    margin-top: 5px;
-    padding: 5px 10px;
-    cursor: pointer;
-  }
-</style>
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <div id="game-container">
@@ -63,6 +11,7 @@
   <p id="prestigeDisplay">Prestige Points: 0</p>
   <p>Coins: <span id="coinDisplay">0</span></p>
   <p>Coins/sec: <span id="cpsDisplay">0</span></p>
+  <p>Click Power: <span id="clickPowerDisplay">1</span></p>
   
   <button id="coinButton">Click me!</button>
   
@@ -87,14 +36,15 @@ let clickPower = 1;
 let coinsPerSecond = 0;
 let prestigePoints = 0;
 let prestigeMultiplier = 1;
-const rebirthThreshold = 100000;
+const rebirthThreshold = 10000;
 
 // Shop items
 const items = {
-  cursor: { name: "Cursor", cps: 0.1, cost: 15, owned: 0 },
-  hand: { name: "Hand", cps: 1, cost: 100, owned: 0 },
-  factory: { name: "Factory", cps: 8, cost: 1200, owned: 0 },
-  automaton: { name: "Automaton", cps: 50, cost: 15000, owned: 0 }
+  glove: { name: "Glove", clickPower: 0.1, cps: 0, cost: 50, owned: 0, requiresRebirth: false },
+  cursor: { name: "Cursor", clickPower: 0, cps: 0.1, cost: 15, owned: 0, requiresRebirth: true },
+  hand: { name: "Hand", clickPower: 0, cps: 1, cost: 100, owned: 0, requiresRebirth: true },
+  factory: { name: "Factory", clickPower: 0, cps: 8, cost: 1200, owned: 0, requiresRebirth: true },
+  automaton: { name: "Automaton", clickPower: 0, cps: 50, cost: 15000, owned: 0, requiresRebirth: true }
 };
 
 // Achievements
@@ -109,7 +59,7 @@ const themes = {
   default: { bg: "#111", buttonBg: "#222", buttonBorder: "#fff", color: "#fff", font: "Orbitron, sans-serif" },
   flavorfoley: { bg: "#1b001b", buttonBg: "#2a002a", buttonBorder: "#ff00ff", color: "#ff00ff", font: "'Orbitron', sans-serif" },
   cookie: { bg: "#a0522d", buttonBg: "#d2691e", buttonBorder: "#fff", color: "#fff", font: "Arial, sans-serif" },
-  uwu: { bg: "#ffc0cb", buttonBg: "#ffb6c1", buttonBorder: "#fff", color: "#fff", font: "'Comic Sans MS', cursive, sans-serif" }
+  uwu: { bg: "#ffc0cb", buttonBg: "#ffb6c1", buttonBorder: "#87CEEB", color: "#87CEEB", font: "'Comic Sans MS', cursive, sans-serif" }
 };
 
 // Initialize shop
@@ -120,11 +70,14 @@ function updateShop() {
     const item = items[key];
     const div = document.createElement("div");
     div.className = "shop-item";
+    let buttonHtml = `<button onclick="buyItem('${key}')" ${item.requiresRebirth && prestigePoints === 0 ? 'disabled' : ''}>Buy</button>`;
     div.innerHTML = `<strong>${item.name}</strong><br>
+                     Click Power: ${item.clickPower}<br>
                      CPS: ${item.cps}<br>
                      Owned: ${item.owned}<br>
                      Cost: ${item.cost}<br>
-                     <button onclick="buyItem('${key}')">Buy</button>`;
+                     ${item.requiresRebirth ? '<span style="color: #ff69b4;">Requires Rebirth!</span><br>' : ''}
+                     ${buttonHtml}`;
     shopDiv.appendChild(div);
   }
 }
@@ -132,13 +85,19 @@ function updateShop() {
 // Buy item
 function buyItem(key) {
   const item = items[key];
+  if (item.requiresRebirth && prestigePoints === 0) {
+    alert("You need to rebirth at least once to buy this item!");
+    return;
+  }
   if (coins >= item.cost) {
     coins -= item.cost;
     item.owned++;
     item.cost = Math.floor(item.cost * 1.15);
     recalcCPS();
+    recalcClickPower();
     updateDisplay();
     updateShop();
+    saveGame();
   }
 }
 
@@ -151,16 +110,27 @@ function recalcCPS() {
   coinsPerSecond *= prestigeMultiplier;
 }
 
+// Recalculate click power
+function recalcClickPower() {
+  clickPower = 1;
+  for (const key in items) {
+    clickPower += items[key].clickPower * items[key].owned;
+  }
+  clickPower *= prestigeMultiplier;
+}
+
 // Click
 document.getElementById("coinButton").addEventListener("click", () => {
   coins += clickPower;
   updateDisplay();
+  saveGame();
 });
 
 // Update display
 function updateDisplay() {
   document.getElementById("coinDisplay").textContent = coins.toFixed(1);
   document.getElementById("cpsDisplay").textContent = coinsPerSecond.toFixed(1);
+  document.getElementById("clickPowerDisplay").textContent = clickPower.toFixed(1);
   document.getElementById("prestigeDisplay").textContent = `Prestige Points: ${prestigePoints}`;
   checkAchievements();
   checkRebirth();
@@ -209,6 +179,7 @@ rebirthBtn.onclick = () => {
     updateDisplay();
     updateShop();
     alert(`You rebirthed! Prestige Points: ${prestigePoints} (+${prestigePoints*10}% CPS)`);
+    saveGame();
   }
 };
 
@@ -222,7 +193,53 @@ function checkRebirth() {
   }
 }
 
+// Save game
+function saveGame() {
+  const gameData = {
+    coins,
+    clickPower,
+    coinsPerSecond,
+    prestigePoints,
+    prestigeMultiplier,
+    items,
+    achievements
+  };
+  localStorage.setItem('kainoClickerSave', JSON.stringify(gameData));
+}
+
+// Load game
+function loadGame() {
+  const savedGame = localStorage.getItem('kainoClickerSave');
+  if (savedGame) {
+    const gameData = JSON.parse(savedGame);
+    coins = gameData.coins;
+    clickPower = gameData.clickPower;
+    coinsPerSecond = gameData.coinsPerSecond;
+    prestigePoints = gameData.prestigePoints;
+    prestigeMultiplier = gameData.prestigeMultiplier;
+    
+    // Restore items
+    for (const key in gameData.items) {
+      if (items[key]) {
+        items[key].owned = gameData.items[key].owned;
+        items[key].cost = gameData.items[key].cost;
+      }
+    }
+    
+    // Restore achievements
+    gameData.achievements.forEach((achievement, index) => {
+      if (achievements[index]) {
+        achievements[index].unlocked = achievement.unlocked;
+      }
+    });
+  }
+}
+
+// Auto-save every 30 seconds
+setInterval(saveGame, 30000);
+
 // Initialize
+loadGame();
 updateShop();
 updateDisplay();
 setTheme('default');

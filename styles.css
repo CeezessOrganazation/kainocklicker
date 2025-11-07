@@ -1,0 +1,67 @@
+body {
+  margin: 0;
+  font-family: 'Orbitron', sans-serif;
+  background-color: #111;
+  color: #fff;
+  text-align: center;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+#game-container {
+  padding: 20px;
+}
+
+#coinButton {
+  width: 200px;
+  height: 200px;
+  font-size: 24px;
+  border-radius: 50%;
+  border: 5px solid #fff;
+  cursor: pointer;
+  background-color: #222;
+  margin: 20px;
+  transition: 0.2s all;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#coinButton:hover {
+  transform: scale(1.1);
+  border-color: #ff00ff;
+}
+
+.themeButton {
+  margin: 5px;
+  padding: 10px 20px;
+  cursor: pointer;
+  border: none;
+  border-radius: 5px;
+  transition: 0.2s all;
+}
+
+.themeButton:hover {
+  opacity: 0.7;
+}
+
+#shop {
+  margin-top: 20px;
+}
+
+.shop-item {
+  margin: 10px;
+  padding: 10px;
+  display: inline-block;
+  background: rgba(255,255,255,0.05);
+  border-radius: 10px;
+}
+
+.shop-item button {
+  margin-top: 5px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
