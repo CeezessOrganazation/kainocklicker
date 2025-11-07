@@ -17,7 +17,7 @@
   
   <div>
     <button class="themeButton" onclick="setTheme('default')">Default</button>
-    <button class="themeButton" onclick="setTheme('flavorfoley')">FLAVOR FOLEY</button>
+    <button class="themeButton" onclick="setTheme('flavorfoley')">spirit</button>
     <button class="themeButton" onclick="setTheme('cookie')">Cookie</button>
     <button class="themeButton" onclick="setTheme('uwu')">Uwu</button>
   </div>
@@ -28,6 +28,20 @@
   
   <p>Achievements:</p>
   <ul id="achievements"></ul>
+
+  <div id="devControls" style="display: none; margin-top: 20px; padding: 10px; background: rgba(255,0,0,0.1); border: 1px solid red;">
+    <h3>Developer Controls</h3>
+    <div>
+      <label for="coinInput">Set Coins:</label>
+      <input type="number" id="coinInput" value="0">
+      <button onclick="setCoins()">Set</button>
+    </div>
+    <div style="margin-top: 10px;">
+      <label for="devMultiplier">Multiplier:</label>
+      <input type="number" id="devMultiplier" value="1" min="1">
+      <button onclick="setMultiplier()">Set</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -36,15 +50,15 @@ let clickPower = 1;
 let coinsPerSecond = 0;
 let prestigePoints = 0;
 let prestigeMultiplier = 1;
-const rebirthThreshold = 10000;
+const rebirthThreshold = 5000;
 
 // Shop items
 const items = {
-  glove: { name: "Glove", clickPower: 0.1, cps: 0, cost: 50, owned: 0, requiresRebirth: false },
-  cursor: { name: "Cursor", clickPower: 0, cps: 0.1, cost: 15, owned: 0, requiresRebirth: true },
-  hand: { name: "Hand", clickPower: 0, cps: 1, cost: 100, owned: 0, requiresRebirth: true },
-  factory: { name: "Factory", clickPower: 0, cps: 8, cost: 1200, owned: 0, requiresRebirth: true },
-  automaton: { name: "Automaton", clickPower: 0, cps: 50, cost: 15000, owned: 0, requiresRebirth: true }
+  glove: { name: "Glove", clickPower: 0.1, cps: 0, cost: 10, owned: 0, requiresRebirth: false },
+  cursor: { name: "Cursor", clickPower: 0, cps: 0.1, cost: 50, owned: 0, requiresRebirth: true },
+  hand: { name: "Hand", clickPower: 0, cps: 1, cost: 500, owned: 0, requiresRebirth: true },
+  factory: { name: "Factory", clickPower: 0, cps: 8, cost: 1000, owned: 0, requiresRebirth: true },
+  automaton: { name: "Automaton", clickPower: 0, cps: 50, cost: 5000, owned: 0, requiresRebirth: true }
 };
 
 // Achievements
@@ -57,7 +71,7 @@ const achievements = [
 // Themes
 const themes = {
   default: { bg: "#111", buttonBg: "#222", buttonBorder: "#fff", color: "#fff", font: "Orbitron, sans-serif" },
-  flavorfoley: { bg: "#1b001b", buttonBg: "#2a002a", buttonBorder: "#ff00ff", color: "#ff00ff", font: "'Orbitron', sans-serif" },
+  flavorfoley: { bg: "#360f5a", buttonBg: "#522081", buttonBorder: "#FFD700", color: "#FFD700", font: "'Orbitron', sans-serif" },
   cookie: { bg: "#a0522d", buttonBg: "#d2691e", buttonBorder: "#fff", color: "#fff", font: "Arial, sans-serif" },
   uwu: { bg: "#ffc0cb", buttonBg: "#ffb6c1", buttonBorder: "#87CEEB", color: "#87CEEB", font: "'Comic Sans MS', cursive, sans-serif" }
 };
@@ -112,11 +126,14 @@ function recalcCPS() {
 
 // Recalculate click power
 function recalcClickPower() {
+  // Start with base click power
   clickPower = 1;
+  // Add item bonuses
   for (const key in items) {
     clickPower += items[key].clickPower * items[key].owned;
   }
-  clickPower *= prestigeMultiplier;
+  // Apply prestige multiplier only to the total
+  clickPower = clickPower * prestigeMultiplier;
 }
 
 // Click
@@ -172,13 +189,13 @@ const rebirthBtn = document.getElementById("rebirthBtn");
 rebirthBtn.onclick = () => {
   if (coins >= rebirthThreshold) {
     prestigePoints++;
-    prestigeMultiplier = 1 + prestigePoints * 0.1; // 10% per prestige
+    prestigeMultiplier = prestigePoints + 1; // Linear increase: 1st=1x, 2nd=2x, 3rd=3x, etc.
     coins = 0;
     for (const key in items) items[key].owned = 0;
     recalcCPS();
     updateDisplay();
     updateShop();
-    alert(`You rebirthed! Prestige Points: ${prestigePoints} (+${prestigePoints*10}% CPS)`);
+    alert(`You rebirthed! Prestige Points: ${prestigePoints} (${prestigeMultiplier}x multiplier)`);
     saveGame();
   }
 };
@@ -237,6 +254,66 @@ function loadGame() {
 
 // Auto-save every 30 seconds
 setInterval(saveGame, 30000);
+
+// Dev mode functions
+let devMode = false;
+
+function toggleDevMode() {
+  if (!devMode && prompt("Enter dev mode password:") === "CEEZESS") {
+    devMode = true;
+    document.getElementById("devControls").style.display = "block";
+  } else if (devMode) {
+    devMode = false;
+    document.getElementById("devControls").style.display = "none";
+  }
+}
+
+function setCoins() {
+  if (!devMode) return;
+  const amount = parseInt(document.getElementById("coinInput").value) || 0;
+  if (amount < 0) return; // Prevent negative coins
+  coins = amount;
+  updateDisplay();
+  saveGame();
+  // Clear input after setting
+  document.getElementById("coinInput").value = "";
+}
+
+function setMultiplier() {
+  if (!devMode) return;
+  const multi = parseInt(document.getElementById("devMultiplier").value) || 1;
+  if (multi < 1) return; // Prevent multiplier less than 1
+  prestigeMultiplier = multi;
+  prestigePoints = multi - 1; // Update prestige points to match multiplier
+  recalcCPS();
+  recalcClickPower();
+  updateDisplay();
+  saveGame();
+}
+
+// Dev mode activation with triple D press
+let dPressCount = 0;
+let lastDPressTime = 0;
+
+document.addEventListener('keydown', (e) => {
+  if (e.key.toLowerCase() === 'd') {
+    const currentTime = Date.now();
+    
+    // Reset count if it's been more than 1 second since last press
+    if (currentTime - lastDPressTime > 1000) {
+      dPressCount = 0;
+    }
+    
+    dPressCount++;
+    lastDPressTime = currentTime;
+    
+    // Check if we've pressed D three times quickly
+    if (dPressCount === 3) {
+      dPressCount = 0;
+      toggleDevMode();
+    }
+  }
+});
 
 // Initialize
 loadGame();
