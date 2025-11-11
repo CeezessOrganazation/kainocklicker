@@ -61,7 +61,9 @@ const items = {
   cursor: { name: "Cursor", clickPower: 0, cps: 0.1, cost: 50, owned: 0, requiresRebirth: true },
   hand: { name: "Hand", clickPower: 0, cps: 1, cost: 500, owned: 0, requiresRebirth: true },
   factory: { name: "Factory", clickPower: 0, cps: 8, cost: 1000, owned: 0, requiresRebirth: true },
-  automaton: { name: "Automaton", clickPower: 0, cps: 50, cost: 5000, owned: 0, requiresRebirth: true }
+  automaton: { name: "Automaton", clickPower: 0, cps: 50, cost: 5000, owned: 0, requiresRebirth: true },
+  // New item: high click power
+  killmaysonnater9000: { name: "killmaysonnater9000", clickPower: 1, cps: 0, cost: 100, owned: 0, requiresRebirth: false }
 };
 
 // Achievements
@@ -83,11 +85,26 @@ const themes = {
 function updateShop() {
   const shopDiv = document.getElementById("shop");
   shopDiv.innerHTML = "";
-  for (const key in items) {
-    const item = items[key];
+
+  // Create two sections: Click Power and CPS
+  const cpSection = document.createElement('div');
+  cpSection.className = 'shop-section';
+  const cpHeader = document.createElement('h3');
+  cpHeader.textContent = 'Click Power Items';
+  cpSection.appendChild(cpHeader);
+
+  const cpsSection = document.createElement('div');
+  cpsSection.className = 'shop-section';
+  const cpsHeader = document.createElement('h3');
+  cpsHeader.textContent = 'CPS Items';
+  cpsSection.appendChild(cpsHeader);
+
+  // Helper to build item node
+  function buildItemNode(key, item) {
     const div = document.createElement("div");
     div.className = "shop-item";
-    let buttonHtml = `<button onclick="buyItem('${key}')" ${item.requiresRebirth && prestigePoints === 0 ? 'disabled' : ''}>Buy</button>`;
+    const disabledAttr = (item.requiresRebirth && prestigePoints === 0) ? 'disabled' : '';
+    const buttonHtml = `<button onclick="buyItem('${key}')" ${disabledAttr}>Buy</button>`;
     div.innerHTML = `<strong>${item.name}</strong><br>
                      Click Power: ${item.clickPower}<br>
                      CPS: ${item.cps}<br>
@@ -95,8 +112,28 @@ function updateShop() {
                      Cost: ${item.cost}<br>
                      ${item.requiresRebirth ? '<span style="color: #ff69b4;">Requires Rebirth!</span><br>' : ''}
                      ${buttonHtml}`;
-    shopDiv.appendChild(div);
+    return div;
   }
+
+  // Populate sections
+  for (const key in items) {
+    const item = items[key];
+    // If item provides click power, add to CP section
+    if (item.clickPower && item.clickPower > 0) {
+      cpSection.appendChild(buildItemNode(key, item));
+    }
+    // If item provides cps, add to CPS section
+    if (item.cps && item.cps > 0) {
+      cpsSection.appendChild(buildItemNode(key, item));
+    }
+    // If neither (rare), put into CP section as fallback
+    if ((!item.clickPower || item.clickPower <= 0) && (!item.cps || item.cps <= 0)) {
+      cpSection.appendChild(buildItemNode(key, item));
+    }
+  }
+
+  shopDiv.appendChild(cpSection);
+  shopDiv.appendChild(cpsSection);
 }
 
 // Buy item
@@ -202,6 +239,7 @@ rebirthBtn.onclick = () => {
                        key === 'cursor' ? 50 :
                        key === 'hand' ? 500 :
                        key === 'factory' ? 1000 :
+                       key === 'killmaysonnater9000' ? 100 :
                        5000; // automaton
     }
     // Reset click power to 1 (base value)
@@ -327,10 +365,11 @@ function resetGame() {
     // Reset all items
     for (const key in items) {
       items[key].owned = 0;
-      items[key].cost = items[key] === items.glove ? 10 :
-                       items[key] === items.cursor ? 50 :
-                       items[key] === items.hand ? 500 :
-                       items[key] === items.factory ? 1000 :
+      items[key].cost = key === 'glove' ? 10 :
+                       key === 'cursor' ? 50 :
+                       key === 'hand' ? 500 :
+                       key === 'factory' ? 1000 :
+                       key === 'killmaysonnater9000' ? 100 :
                        5000; // automaton
     }
     

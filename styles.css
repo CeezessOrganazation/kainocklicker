@@ -65,3 +65,43 @@ body {
   padding: 5px 10px;
   cursor: pointer;
 }
+
+/* Shop sections styling: grouped Click Power and CPS panels */
+.shop-section {
+  display: inline-block;
+  vertical-align: top;
+  width: 45%;
+  margin: 10px;
+  padding: 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.shop-section h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  color: #ffd1ff;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  padding-bottom: 6px;
+}
+
+.shop-section .shop-item {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+  padding: 8px;
+  background: rgba(255,255,255,0.02);
+  border-radius: 6px;
+}
+
+.shop-section .shop-item strong { display: block; color: #fff; }
+
+.shop-section .shop-item button { float: right; }
+
+@media (max-width: 700px) {
+  .shop-section { width: 100%; display: block; }
+  .shop-section .shop-item button { float: none; display: block; width: 100%; margin-top: 8px; }
+}
