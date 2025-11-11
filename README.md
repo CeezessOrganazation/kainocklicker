@@ -1,1 +1,1 @@
-ts so broken prob, just click the index thing to play :3, also if you click fast enough it does freeze your mouse, so uhhhh get gud
+ts so broken prob, just click the index thing to play :3, also uhhhh get gud
